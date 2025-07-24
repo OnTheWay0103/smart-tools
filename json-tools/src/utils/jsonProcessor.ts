@@ -57,7 +57,7 @@ export class JSONProcessor {
 
   static format(jsonString: string, options: JSONProcessingOptions): string {
     try {
-      const parsed = JSON.parse(jsonString);
+      let parsed = JSON.parse(jsonString);
       
       if (options.sortKeys) {
         parsed = this.sortKeys(parsed);

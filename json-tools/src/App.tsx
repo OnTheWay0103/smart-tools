@@ -9,7 +9,7 @@ import {
   Copy, 
   Sparkles,
   Settings,
-  Compress
+  Minimize2
 } from 'lucide-react';
 
 interface ProcessingOptions {
@@ -216,7 +216,7 @@ function App() {
                 disabled={isProcessing}
                 className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
               >
-                <Compress className="w-4 h-4 inline mr-1" />
+                <Minimize2 className="w-4 h-4 inline mr-1" />
                 Minify
               </button>
 
