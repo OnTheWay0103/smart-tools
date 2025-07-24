@@ -1,0 +1,45 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+coverage/
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Env
+.env
+.env.*
+
+# Misc
+*.local
+*.swp
+
+# Dependency directories
+jspm_packages/
+
+# Test
+*.test.ts.snap
+
+# Docs
+/docs/*.log
+
+# Others
+*.bak
+*.tmp 
