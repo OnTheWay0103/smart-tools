@@ -328,12 +328,12 @@ function App() {
             <p>使用JSONPath查询特定的JSON数据</p>
           </div>
         </div>
-        
+
         {/* Control Panel */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12 mb-12 p-8">
           {/* Stats */}
           {stats && (
-            <div className="glass-panel p-8">
+            <div className="glass-panel p-8" style={{ padding: '1.5rem' }}>
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Settings className="w-5 h-5 text-purple-400" />
                 统计信息
@@ -364,15 +364,15 @@ function App() {
           )}
 
           {/* Format Options */}
-          <div className="glass-panel p-8 mt-8 mb-8">
+          <div className="glass-panel p-8 mt-8 mb-8" style={{ padding: '1.5rem', marginTop: '1rem', marginBottom: '5rem' }}>
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Settings className="w-5 h-5 text-purple-400" />
               格式化选项
             </h3>
-            <div style={{marginTop: '2rem'}} className="flex gap-6">
+            <div style={{ marginTop: '2rem' }} className="flex gap-6">
               <div className="flex-1">
                 <label className="flex items-center justify-start">
-                  <span className="text-sm" style={{marginRight: '2rem'}}>缩进空格数</span>
+                  <span className="text-sm" style={{ marginRight: '2rem' }}>缩进空格数:</span>
                   <select
                     value={options.indent}
                     onChange={(e) => setOptions({ ...options, indent: parseInt(e.target.value) })}
@@ -386,7 +386,7 @@ function App() {
               </div>
               <div className="flex-1">
                 <label className="flex items-center justify-start">
-                  <span className="text-sm" style={{marginRight: '2rem'}}>排序键名</span>
+                  <span className="text-sm" style={{ marginRight: '2rem' }}>排序键名:</span>
                   <input
                     type="checkbox"
                     checked={options.sortKeys}
