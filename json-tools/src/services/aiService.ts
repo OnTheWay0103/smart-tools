@@ -11,7 +11,7 @@ export interface AIStructureSuggestion {
 }
 
 export class AIService {
-  private static readonly API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+  private static readonly API_KEY = (import.meta as any).env?.VITE_OPENAI_API_KEY || '';
   private static readonly API_URL = 'https://api.openai.com/v1/chat/completions';
 
   static async fixJSONSyntax(jsonString: string, errorMessage: string): Promise<AIFixSuggestion> {

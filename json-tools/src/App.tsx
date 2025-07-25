@@ -1,15 +1,23 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { JSONProcessor } from './utils/jsonProcessor';
 import { AIService } from './services/aiService';
-import { 
-  FileText, 
-  CheckCircle, 
-  AlertCircle, 
-  Download, 
-  Copy, 
+import {
+  FileText,
+  Download,
+  Copy,
   Sparkles,
+  Minimize2,
+  Database,
+  Trash2,
   Settings,
-  Minimize2
+  AlertCircle,
+  Wand2,
+  CheckCircle2,
+  Search,
+  FileJson,
+  Code2,
+  ArrowLeftRight,
+  Zap
 } from 'lucide-react';
 
 interface ProcessingOptions {
@@ -42,7 +50,7 @@ function App() {
       const result = JSONProcessor.process(input, options);
       setOutput(result.formatted);
       setStats(result.stats);
-      
+
       if (!result.validation.valid) {
         setError(result.validation.error || 'Invalid JSON');
       }
@@ -94,7 +102,9 @@ function App() {
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(output);
+    navigator.clipboard.writeText(output).then(() => {
+      // Could add toast notification here
+    });
   };
 
   const downloadJSON = () => {
@@ -107,202 +117,329 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  const clearInput = () => {
+    setInput('');
+    setOutput('');
+    setError('');
+    setStats(null);
+    setAiSuggestion('');
+  };
+
+  const getStatusIndicator = () => {
+    if (!input.trim()) return 'status-empty';
+    try {
+      JSON.parse(input);
+      return 'status-valid';
+    } catch {
+      return 'status-invalid';
+    }
+  };
+
+  const formatJSONWithHighlight = (json: string) => {
+    if (!json.trim()) return '';
+
+    try {
+      const parsed = JSON.parse(json);
+      const formatted = JSON.stringify(parsed, null, 2);
+
+      return formatted
+        .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(\.\d+)?([eE][+-]?\d+)?)/g, (match) => {
+          let cls = '';
+          if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+              cls = 'json-key';
+            } else {
+              cls = 'json-string';
+            }
+          } else if (/true|false/.test(match)) {
+            cls = 'json-boolean';
+          } else if (/null/.test(match)) {
+            cls = 'json-null';
+          } else if (!isNaN(parseFloat(match))) {
+            cls = 'json-number';
+          }
+          return `<span class="${cls}">${match}</span>`;
+        })
+        .replace(/({|}|[|])/g, '<span class="json-brace">$1</span>')
+        .replace(/\n/g, '<br>')
+        .replace(/  /g, '&nbsp;&nbsp;');
+    } catch {
+      return json;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">JSON Tools</h1>
-          <p className="text-gray-600">AI-Powered JSON Formatter, Validator & Optimizer</p>
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%)' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
+        {/* Header */}
+        <header className="header-glow">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-500 via-indigo-500 to-pink-500 floating">
+              <Database className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold gradient-text">JSONMagic</h1>
+              <p className="text-gray-400 mt-1 text-base">强大的在线JSON处理工具，提供格式化、验证、转换等多种功能</p>
+            </div>
+          </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Input Panel */}
-          <div className="bg-white rounded-lg shadow-sm border">
-            <div className="p-4 border-b flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-gray-500" />
-                <span className="font-medium">Input JSON</span>
+        {/* Main Editor - Exactly like example */}
+        <div className="editor-container">
+          <div className="panel-group">
+            {/* Input Panel */}
+            <div className="panel">
+              <div className="panel-header">
+                <div className="panel-title">
+                  <FileJson className="w-5 h-5 text-purple-400" />
+                  <span>原始JSON</span>
+                  <span className={`status-indicator ${getStatusIndicator()}`} />
+                </div>
+                <div className="panel-actions">
+                  <button
+                    onClick={handleFormat}
+                    disabled={isProcessing}
+                    className="btn-primary flex items-center gap-2"
+                  >
+                    <Wand2 className="w-4 h-4" />
+                    <span>格式化</span>
+                  </button>
+                  <button
+                    onClick={error ? handleAiFix : handleAiSuggest}
+                    disabled={isAiFixing || (!error && !stats)}
+                    className="btn-secondary flex items-center gap-2"
+                  >
+                    {isAiFixing ? (
+                      <>
+                        <div className="spinner" />
+                        <span>AI处理中...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        <span>AI助手</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={clearInput}
+                    className="btn-secondary flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>清空</span>
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                {JSONProcessor.validate(input).valid ? (
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                ) : input && (
-                  <AlertCircle className="w-5 h-5 text-red-500" />
+              <div className="editor-area">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="在此粘贴或输入JSON数据..."
+                  className="json-editor"
+                />
+              </div>
+            </div>
+
+            {/* Output Panel */}
+            <div className="panel">
+              <div className="panel-header">
+                <div className="panel-title">
+                  <FileText className="w-5 h-5 text-purple-400" />
+                  <span>格式化输出</span>
+                </div>
+                <div className="panel-actions">
+                  <button
+                    onClick={handleMinify}
+                    disabled={isProcessing}
+                    className="btn-secondary flex items-center gap-2"
+                  >
+                    <Minimize2 className="w-4 h-4" />
+                    <span>压缩</span>
+                  </button>
+                  <button
+                    onClick={copyToClipboard}
+                    className="btn-primary flex items-center gap-2"
+                  >
+                    <Copy className="w-4 h-4" />
+                    <span>复制</span>
+                  </button>
+                  <button
+                    onClick={downloadJSON}
+                    className="btn-secondary flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>下载</span>
+                  </button>
+                </div>
+              </div>
+              <div className="editor-area">
+                {output ? (
+                  <pre
+                    className="json-display"
+                    dangerouslySetInnerHTML={{ __html: formatJSONWithHighlight(output) }}
+                  />
+                ) : (
+                  <div className="json-editor json-display text-gray-500"
+                    style={{ color: 'var(--text-muted)', fontStyle: 'italic', padding: '1.5rem' }}
+                  >
+                    格式化后的JSON将显示在这里...
+                  </div>
                 )}
               </div>
             </div>
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Paste your JSON here..."
-              className="w-full h-96 p-4 font-mono text-sm border-0 resize-none focus:outline-none"
-            />
-          </div>
-
-          {/* Output Panel */}
-          <div className="bg-white rounded-lg shadow-sm border">
-            <div className="p-4 border-b flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-gray-500" />
-                <span className="font-medium">Formatted JSON</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={copyToClipboard}
-                  className="p-2 text-gray-500 hover:text-gray-700"
-                  title="Copy to clipboard"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={downloadJSON}
-                  className="p-2 text-gray-500 hover:text-gray-700"
-                  title="Download JSON"
-                >
-                  <Download className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            <textarea
-              value={output}
-              readOnly
-              className="w-full h-96 p-4 font-mono text-sm border-0 resize-none focus:outline-none bg-gray-50"
-              placeholder="Formatted JSON will appear here..."
-            />
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="mt-6 bg-white rounded-lg shadow-sm border p-4">
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Format Options */}
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2">
-                <span className="text-sm font-medium">Indent:</span>
-                <select
-                  value={options.indent}
-                  onChange={(e) => setOptions({ ...options, indent: parseInt(e.target.value) })}
-                  className="border rounded px-2 py-1 text-sm"
-                >
-                  <option value={2}>2 spaces</option>
-                  <option value={4}>4 spaces</option>
-                  <option value={8}>Tab</option>
-                </select>
-              </label>
+        {/* Tools Panel - Exactly like the example */}
+        <div className="toolbar">
+          <div className="tool-card active">
+            <Zap className="tool-icon" />
+            <h3>JSON格式化</h3>
+            <p>美化JSON数据，添加缩进和空格以增强可读性</p>
+          </div>
 
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={options.sortKeys}
-                  onChange={(e) => setOptions({ ...options, sortKeys: e.target.checked })}
-                  className="rounded"
-                />
-                <span className="text-sm">Sort keys</span>
-              </label>
-            </div>
+          <div className="tool-card">
+            <Minimize2 className="tool-icon" />
+            <h3>JSON压缩</h3>
+            <p>删除JSON中所有不必要的空格和换行符</p>
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2 ml-auto">
-              <button
-                onClick={handleFormat}
-                disabled={isProcessing}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
-                Format
-              </button>
+          <div className="tool-card">
+            <CheckCircle2 className="tool-icon" />
+            <h3>JSON验证</h3>
+            <p>检查JSON语法和数据结构是否正确</p>
+          </div>
 
-              <button
-                onClick={handleMinify}
-                disabled={isProcessing}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
-              >
-                <Minimize2 className="w-4 h-4 inline mr-1" />
-                Minify
-              </button>
+          <div className="tool-card">
+            <ArrowLeftRight className="tool-icon" />
+            <h3>JSON转XML</h3>
+            <p>将JSON数据转换为XML格式</p>
+          </div>
 
-              {error && (
-                <button
-                  onClick={handleAiFix}
-                  disabled={isAiFixing}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
-                >
-                  <Sparkles className="w-4 h-4 inline mr-1" />
-                  {isAiFixing ? 'Fixing...' : 'AI Fix'}
-                </button>
-              )}
+          <div className="tool-card">
+            <Code2 className="tool-icon" />
+            <h3>JSON对比</h3>
+            <p>比较两个JSON数据并高亮显示差异</p>
+          </div>
 
-              <button
-                onClick={handleAiSuggest}
-                disabled={!stats}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-              >
-                <Sparkles className="w-4 h-4 inline mr-1" />
-                AI Suggest
-              </button>
-            </div>
+          <div className="tool-card">
+            <Search className="tool-icon" />
+            <h3>JSON路径查询</h3>
+            <p>使用JSONPath查询特定的JSON数据</p>
           </div>
         </div>
-
-        {/* Stats and AI Suggestions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">          {/* Stats */}
+        
+        {/* Control Panel */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12 mb-12">
+          {/* Stats */}
           {stats && (
-            <div className="bg-white rounded-lg shadow-sm border p-4">
-              <h3 className="font-medium mb-3 flex items-center gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                Statistics
+            <div className="glass-panel p-8">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-purple-400" />
+                统计信息
               </h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Original size:</span>
-                  <span className="ml-2 font-mono">{stats.size} bytes</span>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">原始大小:</span>
+                  <span className="font-mono text-purple-400">{stats.size} B</span>
                 </div>
-                <div>
-                  <span className="text-gray-600">Formatted size:</span>
-                  <span className="ml-2 font-mono">{stats.formattedSize} bytes</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">格式化后:</span>
+                  <span className="font-mono text-green-400">{stats.formattedSize} B</span>
                 </div>
-                <div>
-                  <span className="text-gray-600">Objects:</span>
-                  <span className="ml-2 font-mono">{stats.objects}</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">对象数:</span>
+                  <span className="font-mono text-blue-400">{stats.objects}</span>
                 </div>
-                <div>
-                  <span className="text-gray-600">Arrays:</span>
-                  <span className="ml-2 font-mono">{stats.arrays}</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">数组数:</span>
+                  <span className="font-mono text-orange-400">{stats.arrays}</span>
                 </div>
-                <div>
-                  <span className="text-gray-600">Primitives:</span>
-                  <span className="ml-2 font-mono">{stats.primitives}</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">基本类型:</span>
+                  <span className="font-mono text-pink-400">{stats.primitives}</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* AI Suggestions */}
-          {aiSuggestion && (
-            <div className="bg-white rounded-lg shadow-sm border p-4">
-              <h3 className="font-medium mb-3 flex items-center gap-2"
-              >
-                <Sparkles className="w-4 h-4 text-purple-500" />
-                AI Suggestions
-              </h3>
-              <div className="text-sm text-gray-700 whitespace-pre-wrap"
-              >
-                {aiSuggestion}
+          {/* Format Options */}
+          <div className="glass-panel p-8 mt-8 mb-8">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Settings className="w-5 h-5 text-purple-400" />
+              格式化选项
+            </h3>
+            <div style={{marginTop: '2rem'}} className="flex gap-6">
+              <div className="flex-1">
+                <label className="flex items-center justify-start">
+                  <span className="text-sm" style={{marginRight: '2rem'}}>缩进空格数</span>
+                  <select
+                    value={options.indent}
+                    onChange={(e) => setOptions({ ...options, indent: parseInt(e.target.value) })}
+                    className="btn-secondary px-3 py-1 text-sm"
+                  >
+                    <option value={2}>2 空格</option>
+                    <option value={4}>4 空格</option>
+                    <option value={8}>8 空格</option>
+                  </select>
+                </label>
+              </div>
+              <div className="flex-1">
+                <label className="flex items-center justify-start">
+                  <span className="text-sm" style={{marginRight: '2rem'}}>排序键名</span>
+                  <input
+                    type="checkbox"
+                    checked={options.sortKeys}
+                    onChange={(e) => setOptions({ ...options, sortKeys: e.target.checked })}
+                    className="w-5 h-5 rounded text-purple-500 focus:ring-purple-500"
+                  />
+                </label>
               </div>
             </div>
-          )}
+          </div>
         </div>
+
+        {/* AI Suggestions */}
+        {aiSuggestion && (
+          <div className="glass-panel p-8 mt-8 mb-8">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-400" />
+              AI 建议
+            </h3>
+            <div className="text-sm text-gray-300 leading-relaxed bg-gray-800/50 p-4 rounded-lg"
+              style={{ borderLeft: '3px solid var(--accent-primary)' }}
+            >
+              {aiSuggestion}
+            </div>
+          </div>
+        )}
 
         {/* Error Display */}
         {error && (
-          <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4"
+          <div className="mt-16 mb-16 glass-panel p-6"
+            style={{
+              borderLeft: '4px solid var(--error)',
+              background: 'linear-gradient(135deg, rgba(248, 113, 113, 0.1), rgba(239, 68, 68, 0.05))'
+            }}
           >
-            <div className="flex items-start gap-2"
-            >
-              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-red-500/20 rounded-lg">
+                <AlertCircle className="w-6 h-6 flex-shrink-0" style={{ color: 'var(--error)' }} />
+              </div>
               <div>
-                <h4 className="font-medium text-red-800">JSON Error</h4>
-                <p className="text-red-700 text-sm mt-1">{error}</p>
+                <h4 className="font-semibold text-lg mb-2" style={{ color: 'var(--error)' }}>
+                  JSON 错误
+                </h4>
+                <div className="text-gray-300 text-sm leading-relaxed"
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.2)',
+                    padding: '1rem',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(248, 113, 113, 0.2)'
+                  }}
+                >
+                  {error}
+                </div>
               </div>
             </div>
           </div>
